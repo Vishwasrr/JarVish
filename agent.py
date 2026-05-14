@@ -1,10 +1,16 @@
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
+from google import genai
+from google.genai import types
 
 load_dotenv()
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+
+if not GEMINI_API_KEY:
+    raise RuntimeError("Set GEMINI_API_KEY in your .env file before running JarVish.")
+
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 SYSTEM_PROMPT = """
 You are JarVish.
@@ -28,12 +34,12 @@ Always:
 
 
 def ask_agent(user_input):
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_input}
-        ]
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        contents=user_input,
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+        ),
     )
 
-    return response.choices[0].message.content
+    return response.text
